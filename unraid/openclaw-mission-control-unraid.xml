@@ -9,13 +9,13 @@
 <Container version="2">
   <Name>OpenClaw-Mission-Control</Name>
   <Repository>ghcr.io/julesdg6/openclaw-mission-control-unraid:latest</Repository>
-  <Registry>https://github.com/julesdg6/openclaw-mission-control/pkgs/container/openclaw-mission-control-unraid</Registry>
+  <Registry>https://github.com/julesdg6/openclaw-mission-control-unraid/pkgs/container/openclaw-mission-control-unraid</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/julesdg6/openclaw-mission-control/issues</Support>
-  <Project>https://github.com/julesdg6/openclaw-mission-control</Project>
+  <Support>https://github.com/julesdg6/openclaw-mission-control-unraid/issues</Support>
+  <Project>https://github.com/abhi1693/openclaw-mission-control</Project>
   <Overview>
     OpenClaw Mission Control is an AI agent orchestration platform.
     This single-container edition bundles PostgreSQL, Redis, the backend API,
@@ -24,9 +24,9 @@
   </Overview>
   <Category>Tools: Other</Category>
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control/master/unraid/openclaw-mission-control-unraid.xml</TemplateURL>
+  <TemplateURL>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control-unraid/main/unraid/openclaw-mission-control-unraid.xml</TemplateURL>
   <!-- Replace icon.png with a proper 128x128 PNG once available. -->
-  <Icon>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control/master/unraid/mission_control.png</Icon>
+  <Icon>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control-unraid/main/unraid/mission_control.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
