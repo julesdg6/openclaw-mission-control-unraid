@@ -28,4 +28,4 @@ until redis-cli -h 127.0.0.1 ping 2>/dev/null | grep -q PONG; do sleep 1; done
 
 echo "[start-worker] Starting webhook worker"
 cd /opt/openclaw-mission-control/backend
-exec python scripts/rq-docker worker
+exec python /opt/openclaw-mission-control/scripts/rq-docker worker
