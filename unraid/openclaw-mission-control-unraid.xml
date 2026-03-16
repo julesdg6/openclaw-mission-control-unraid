@@ -26,7 +26,7 @@
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control/master/unraid/openclaw-mission-control-unraid.xml</TemplateURL>
   <!-- Replace icon.png with a proper 128x128 PNG once available. -->
-  <Icon>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control/master/unraid/icon.png</Icon>
+  <Icon>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control/master/unraid/mission_control.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
