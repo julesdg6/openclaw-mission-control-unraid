@@ -24,13 +24,10 @@ ghcr.io/julesdg6/openclaw-mission-control-unraid:latest
 
 ## Installing on Unraid
 
-### Method 1 — Community Apps (recommended)
+> **Note:** This template is not yet listed in the Unraid Community Apps store.
+> Use one of the methods below to install it manually.
 
-1. Open the Unraid web UI and go to **Apps**.
-2. Search for **OpenClaw Mission Control**.
-3. Click **Install** and fill in the required variables (see [Configuration](#configuration) below).
-
-### Method 2 — Add the template manually
+### Method 1 — Add the template manually (recommended)
 
 1. In the Unraid web UI go to **Docker** → **Add Container** → **Template repositories**.
 2. Add the following URL and click **Save**:
@@ -39,7 +36,7 @@ ghcr.io/julesdg6/openclaw-mission-control-unraid:latest
    ```
 3. Go back to **Add Container**, select the **OpenClaw Mission Control** template, and fill in the required variables.
 
-### Method 3 — docker-compose / CLI
+### Method 2 — docker-compose / CLI
 
 ```yaml
 version: "3.9"
