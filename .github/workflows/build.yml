@@ -54,20 +54,37 @@ jobs:
             echo "Using manually supplied ref: ${REF}"
           else
             # Fetch the latest published release from the upstream repo.
-            RESPONSE=$(curl -sf \
+            RELEASE_RESPONSE=$(curl -sf \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               https://api.github.com/repos/abhi1693/openclaw-mission-control/releases/latest \
               2>&1) || {
-              echo "WARNING: Failed to fetch upstream release info (curl exit code $?): ${RESPONSE}"
-              RESPONSE=""
+              echo "WARNING: Failed to fetch upstream release info (curl exit code $?): ${RELEASE_RESPONSE}"
+              RELEASE_RESPONSE=""
             }
 
-            REF=$(echo "${RESPONSE}" | jq -r '.tag_name // empty')
+            REF=$(echo "${RELEASE_RESPONSE}" | jq -r '.tag_name // empty')
 
             if [ -z "${REF}" ]; then
-              echo "No published release found – falling back to 'main'."
-              REF="main"
+              # No published release – fall back to the upstream repo's default branch.
+              REPO_RESPONSE=$(curl -sf \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                https://api.github.com/repos/abhi1693/openclaw-mission-control \
+                2>&1) || {
+                echo "WARNING: Failed to fetch upstream repo info (curl exit code $?): ${REPO_RESPONSE}"
+                REPO_RESPONSE=""
+              }
+
+              DEFAULT_BRANCH=$(echo "${REPO_RESPONSE}" | jq -r '.default_branch // empty')
+
+              if [ -z "${DEFAULT_BRANCH}" ]; then
+                echo "WARNING: Could not determine upstream default branch – falling back to 'master'."
+                DEFAULT_BRANCH="master"
+              fi
+
+              echo "No published release found – falling back to default branch '${DEFAULT_BRANCH}'."
+              REF="${DEFAULT_BRANCH}"
             else
               echo "Latest upstream release: ${REF}"
             fi
