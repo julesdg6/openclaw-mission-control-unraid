@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<!--
+  Unraid Community Apps template for OpenClaw Mission Control.
+  Single-container image that bundles PostgreSQL, Redis, the FastAPI
+  backend, the RQ webhook worker, and the Next.js frontend.
+
+  Image repository: ghcr.io/julesdg6/openclaw-mission-control-unraid
+-->
+<Container version="2">
+  <Name>OpenClaw-Mission-Control</Name>
+  <Repository>ghcr.io/julesdg6/openclaw-mission-control-unraid:latest</Repository>
+  <Registry>https://github.com/julesdg6/openclaw-mission-control/pkgs/container/openclaw-mission-control-unraid</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/julesdg6/openclaw-mission-control/issues</Support>
+  <Project>https://github.com/julesdg6/openclaw-mission-control</Project>
+  <Overview>
+    OpenClaw Mission Control is an AI agent orchestration platform.
+    This single-container edition bundles PostgreSQL, Redis, the backend API,
+    the webhook worker, and the Next.js frontend — no external services required.
+    Access the UI on the port mapped to 3000 and the API on the port mapped to 8000.
+  </Overview>
+  <Category>Tools: Other</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control/master/unraid/openclaw-mission-control-unraid.xml</TemplateURL>
+  <!-- Replace icon.png with a proper 128x128 PNG once available. -->
+  <Icon>https://raw.githubusercontent.com/julesdg6/openclaw-mission-control/master/unraid/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- ── Ports ──────────────────────────────────────────────────────────── -->
+  <Config
+    Name="Frontend UI Port"
+    Target="3000"
+    Default="3000"
+    Mode="tcp"
+    Description="Port for the Next.js frontend (browser UI)."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">3000</Config>
+
+  <Config
+    Name="Backend API Port"
+    Target="8000"
+    Default="8000"
+    Mode="tcp"
+    Description="Port for the FastAPI backend (REST API)."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">8000</Config>
+
+  <!-- ── Persistent storage ─────────────────────────────────────────────── -->
+  <Config
+    Name="App Data"
+    Target="/config"
+    Default="/mnt/user/appdata/openclaw-mission-control"
+    Mode="rw"
+    Description="Persistent storage for PostgreSQL data, Redis snapshots, and application configuration."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/openclaw-mission-control</Config>
+
+  <!-- ── Authentication ─────────────────────────────────────────────────── -->
+  <Config
+    Name="AUTH_MODE"
+    Target="AUTH_MODE"
+    Default="local"
+    Mode=""
+    Description="Authentication mode. Use 'local' for token-based auth or 'clerk' for Clerk JWT auth."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">local</Config>
+
+  <Config
+    Name="LOCAL_AUTH_TOKEN"
+    Target="LOCAL_AUTH_TOKEN"
+    Default=""
+    Mode=""
+    Description="Required when AUTH_MODE=local. Must be at least 50 characters. Use a strong random value."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true"/>
+
+  <!-- ── URLs ───────────────────────────────────────────────────────────── -->
+  <Config
+    Name="BASE_URL"
+    Target="BASE_URL"
+    Default="http://localhost:8000"
+    Mode=""
+    Description="Public URL the backend advertises in generated gateway instructions and webhook flows. Update when behind a reverse proxy (e.g. http://192.168.1.10:8000)."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">http://localhost:8000</Config>
+
+  <Config
+    Name="CORS_ORIGINS"
+    Target="CORS_ORIGINS"
+    Default="http://localhost:3000"
+    Mode=""
+    Description="Comma-separated list of allowed CORS origins. Set to the browser-facing URL of the frontend (e.g. http://192.168.1.10:3000)."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">http://localhost:3000</Config>
+
+  <Config
+    Name="NEXT_PUBLIC_API_URL"
+    Target="NEXT_PUBLIC_API_URL"
+    Default="auto"
+    Mode=""
+    Description="URL used by the browser to reach the backend API. Use 'auto' to target port 8000 on the same host, or supply an explicit URL (e.g. http://192.168.1.10:8000)."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">auto</Config>
+
+  <!-- ── Database ───────────────────────────────────────────────────────── -->
+  <Config
+    Name="POSTGRES_DB"
+    Target="POSTGRES_DB"
+    Default="mission_control"
+    Mode=""
+    Description="Name of the PostgreSQL database."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">mission_control</Config>
+
+  <Config
+    Name="POSTGRES_USER"
+    Target="POSTGRES_USER"
+    Default="postgres"
+    Mode=""
+    Description="PostgreSQL username."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">postgres</Config>
+
+  <Config
+    Name="POSTGRES_PASSWORD"
+    Target="POSTGRES_PASSWORD"
+    Default="postgres"
+    Mode=""
+    Description="PostgreSQL password. PostgreSQL only listens on 127.0.0.1 inside the container, but it is still good practice to set a strong, unique value."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true">postgres</Config>
+
+  <!-- ── Logging ────────────────────────────────────────────────────────── -->
+  <Config
+    Name="LOG_LEVEL"
+    Target="LOG_LEVEL"
+    Default="INFO"
+    Mode=""
+    Description="Backend log level. One of: DEBUG, INFO, WARNING, ERROR."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">INFO</Config>
+</Container>
