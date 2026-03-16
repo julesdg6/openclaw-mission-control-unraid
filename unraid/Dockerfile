@@ -44,6 +44,10 @@ ENV PATH="/opt/openclaw-mission-control/backend/.venv/bin:${PATH}"
 
 # ── frontend Node dependencies & production build ─────────────────────────────
 WORKDIR /opt/openclaw-mission-control/frontend
+# Set NEXT_PUBLIC_* defaults so `next build` embeds sensible values.
+# These can be overridden at runtime via container environment variables.
+ENV NEXT_PUBLIC_API_URL=auto \
+    NEXT_PUBLIC_AUTH_MODE=local
 RUN npm ci && npm run build
 
 WORKDIR /opt/openclaw-mission-control
