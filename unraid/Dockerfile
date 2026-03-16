@@ -5,6 +5,10 @@
 
 FROM python:3.12-slim
 
+# Build-time argument injected by the CI workflow.
+ARG UPSTREAM_VERSION=unknown
+LABEL org.opencontainers.image.version="${UPSTREAM_VERSION}"
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

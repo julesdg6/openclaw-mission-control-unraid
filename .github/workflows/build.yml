@@ -1,0 +1,128 @@
+name: Build and Push Docker Image
+
+# Builds a single-container Unraid image that bundles the upstream
+# abhi1693/openclaw-mission-control application together with the
+# supervisord wrapper scripts in this repository.
+#
+# Triggers:
+#   • Schedule  – checks for a new upstream release once per day.
+#   • Push      – rebuilds whenever the Dockerfile or wrapper scripts change.
+#   • Dispatch  – allows a manual build, optionally targeting a specific
+#                 upstream ref (tag, branch, or SHA).
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC daily (GitHub-hosted runners use UTC)
+  push:
+    branches:
+      - main
+    paths:
+      - 'unraid/**'
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: >
+          Upstream ref to build (tag, branch, or SHA).
+          Leave blank to use the latest release.
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # ── 1. Checkout this wrapper repository ──────────────────────────────────
+      - name: Checkout wrapper repository
+        uses: actions/checkout@v4
+
+      # ── 2. Resolve the upstream ref to build ─────────────────────────────────
+      - name: Resolve upstream ref
+        id: upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_REF: ${{ github.event.inputs.upstream_ref }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${INPUT_REF}" ]; then
+            REF="${INPUT_REF}"
+            echo "Using manually supplied ref: ${REF}"
+          else
+            # Fetch the latest published release from the upstream repo.
+            RESPONSE=$(curl -sf \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              https://api.github.com/repos/abhi1693/openclaw-mission-control/releases/latest \
+              2>&1) || {
+              echo "WARNING: Failed to fetch upstream release info (curl exit code $?): ${RESPONSE}"
+              RESPONSE=""
+            }
+
+            REF=$(echo "${RESPONSE}" | jq -r '.tag_name // empty')
+
+            if [ -z "${REF}" ]; then
+              echo "No published release found – falling back to 'main'."
+              REF="main"
+            else
+              echo "Latest upstream release: ${REF}"
+            fi
+          fi
+
+          echo "ref=${REF}" >> "${GITHUB_OUTPUT}"
+
+          # Derive a Docker-safe image tag from the ref (strip leading 'v').
+          IMAGE_TAG="${REF#v}"
+          echo "image_tag=${IMAGE_TAG}" >> "${GITHUB_OUTPUT}"
+
+      # ── 3. Checkout the upstream application source ───────────────────────────
+      - name: Checkout upstream source
+        uses: actions/checkout@v4
+        with:
+          repository: abhi1693/openclaw-mission-control
+          ref: ${{ steps.upstream.outputs.ref }}
+          path: upstream
+
+      # ── 4. Overlay the wrapper scripts onto the upstream tree ─────────────────
+      # The Dockerfile expects an `unraid/` directory at the root of the
+      # build context so that its COPY instructions can reference it.
+      - name: Copy unraid scripts into upstream source tree
+        run: cp -r unraid upstream/unraid
+
+      # ── 5. Set up Docker Buildx ───────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 6. Authenticate with the GitHub Container Registry ───────────────────
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 7. Build and push ─────────────────────────────────────────────────────
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: upstream
+          file: upstream/unraid/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/julesdg6/openclaw-mission-control-unraid:latest
+            ghcr.io/julesdg6/openclaw-mission-control-unraid:${{ steps.upstream.outputs.image_tag }}
+          # Pass the upstream version into the image as a build argument and label.
+          build-args: |
+            UPSTREAM_VERSION=${{ steps.upstream.outputs.image_tag }}
+          labels: |
+            org.opencontainers.image.title=OpenClaw Mission Control (Unraid)
+            org.opencontainers.image.description=Single-container Unraid image for OpenClaw Mission Control
+            org.opencontainers.image.url=https://github.com/julesdg6/openclaw-mission-control-unraid
+            org.opencontainers.image.source=https://github.com/abhi1693/openclaw-mission-control
+            org.opencontainers.image.version=${{ steps.upstream.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
