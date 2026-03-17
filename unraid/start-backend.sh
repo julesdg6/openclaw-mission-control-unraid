@@ -17,9 +17,12 @@ export LOCAL_AUTH_TOKEN="${LOCAL_AUTH_TOKEN:-}"
 export BASE_URL="${BASE_URL:-http://localhost:8000}"
 export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:3000}"
 
-# Wait for PostgreSQL.
+# Wait for PostgreSQL and the target database/user to be accessible.
+# pg_isready only confirms the server accepts connections; it does not
+# verify that the role and database created by init-db.sh already exist.
+# Connecting with the application credentials ensures both are present.
 echo "[start-backend] Waiting for PostgreSQL..."
-until pg_isready -h 127.0.0.1 -q 2>/dev/null; do sleep 1; done
+until PGPASSWORD="${POSTGRES_PASSWORD}" psql -h 127.0.0.1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "SELECT 1" >/dev/null 2>&1; do sleep 1; done
 
 # Wait for Redis.
 echo "[start-backend] Waiting for Redis..."

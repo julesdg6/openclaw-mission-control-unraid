@@ -18,9 +18,12 @@ export RQ_QUEUE_NAME="${RQ_QUEUE_NAME:-default}"
 export RQ_DISPATCH_THROTTLE_SECONDS="${RQ_DISPATCH_THROTTLE_SECONDS:-2.0}"
 export RQ_DISPATCH_MAX_RETRIES="${RQ_DISPATCH_MAX_RETRIES:-3}"
 
-# Wait for PostgreSQL.
+# Wait for PostgreSQL and the target database/user to be accessible.
+# pg_isready only confirms the server accepts connections; it does not
+# verify that the role and database created by init-db.sh already exist.
+# Connecting with the application credentials ensures both are present.
 echo "[start-worker] Waiting for PostgreSQL..."
-until pg_isready -h 127.0.0.1 -q 2>/dev/null; do sleep 1; done
+until PGPASSWORD="${POSTGRES_PASSWORD}" psql -h 127.0.0.1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "SELECT 1" >/dev/null 2>&1; do sleep 1; done
 
 # Wait for Redis.
 echo "[start-worker] Waiting for Redis..."
