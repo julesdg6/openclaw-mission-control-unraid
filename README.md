@@ -54,14 +54,20 @@ The CI workflow automatically prefers `GHCR_TOKEN` over `GITHUB_TOKEN` when the 
 > **Note:** This template is not yet listed in the Unraid Community Apps store.
 > Use one of the methods below to install it manually.
 
-### Method 1 — Add the template manually (recommended)
+### Method 1 — Download the template file (recommended for Unraid 7+)
 
-1. In the Unraid web UI go to **Docker** → **Add Container** → **Template repositories**.
-2. Add the following URL and click **Save**:
+In Unraid 7 and later the **Template repositories** field was removed from the Docker UI.
+Instead, copy the template XML file directly to your Unraid server and then add the container through the UI.
+
+1. Open an Unraid terminal (via the web UI: **Tools** → **Terminal**, or SSH into the server).
+2. Run the following command to download the template to the correct location:
+   ```bash
+   wget -O /boot/config/plugins/dockerMan/templates-user/openclaw-mission-control-unraid.xml \
+     https://raw.githubusercontent.com/julesdg6/openclaw-mission-control-unraid/main/unraid/openclaw-mission-control-unraid.xml
    ```
-   https://raw.githubusercontent.com/julesdg6/openclaw-mission-control-unraid/main/unraid/openclaw-mission-control-unraid.xml
-   ```
-3. Go back to **Add Container**, select the **OpenClaw Mission Control** template, and fill in the required variables.
+3. In the Unraid web UI go to **Docker** → **Add Container**.
+4. In the **Template** drop-down select **openclaw-mission-control-unraid** (listed under *User Templates*).
+5. Fill in the required variables (see the [Configuration](#configuration) table below) and click **Apply**.
 
 ### Method 2 — docker-compose / CLI
 
