@@ -20,7 +20,12 @@
     OpenClaw Mission Control is an AI agent orchestration platform.
     This single-container edition bundles PostgreSQL, Redis, the backend API,
     the webhook worker, and the Next.js frontend — no external services required.
-    Access the UI on the port mapped to 3000 and the API on the port mapped to 8000.
+    Two host ports must be mapped: the frontend UI (default 3000) and the backend API
+    (default 8000). The browser calls the backend API port directly for authentication
+    and all API requests, so both ports must be reachable from your browser.
+    PostgreSQL and Redis run on loopback inside the container and do not need host port mappings.
+    Set BASE_URL, CORS_ORIGINS, and NEXT_PUBLIC_API_URL to your Unraid server's real IP
+    address (not localhost) so that browser requests are routed and accepted correctly.
   </Overview>
   <Category>Tools: Other</Category>
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
@@ -41,7 +46,7 @@
     Target="3000"
     Default="3000"
     Mode="tcp"
-    Description="Port for the Next.js frontend (browser UI)."
+    Description="Host port mapped to the Next.js frontend (browser UI). This is the port you open in your browser."
     Type="Port"
     Display="always"
     Required="true"
@@ -52,7 +57,7 @@
     Target="8000"
     Default="8000"
     Mode="tcp"
-    Description="Port for the FastAPI backend (REST API)."
+    Description="Host port mapped to the FastAPI backend (REST API). The browser calls this port directly for all API requests including token validation — it must be reachable from your browser, not just internally. If you change this from the default 8000, update NEXT_PUBLIC_API_URL and BASE_URL accordingly."
     Type="Port"
     Display="always"
     Required="true"
@@ -99,7 +104,7 @@
     Target="BASE_URL"
     Default="http://localhost:8000"
     Mode=""
-    Description="Public URL the backend advertises in generated gateway instructions and webhook flows. Update when behind a reverse proxy (e.g. http://192.168.1.10:8000)."
+    Description="Public URL of the backend, used in generated gateway instructions and webhook payloads. Must be reachable from outside the container. Replace 'localhost' with your Unraid server's IP or hostname (e.g. http://192.168.1.10:8000). If you mapped the backend to a different host port, use that port here."
     Type="Variable"
     Display="always"
     Required="true"
@@ -110,7 +115,7 @@
     Target="CORS_ORIGINS"
     Default="http://localhost:3000"
     Mode=""
-    Description="Comma-separated list of allowed CORS origins. Set to the browser-facing URL of the frontend (e.g. http://192.168.1.10:3000)."
+    Description="Comma-separated list of browser origins the backend will accept requests from. Must match exactly how you access the frontend in your browser. Replace 'localhost' with your Unraid server's IP or hostname (e.g. http://192.168.1.10:3000). Using 'localhost' here while accessing via an IP address will cause 'Unable to reach backend' errors."
     Type="Variable"
     Display="always"
     Required="true"
@@ -121,7 +126,7 @@
     Target="NEXT_PUBLIC_API_URL"
     Default="auto"
     Mode=""
-    Description="URL used by the browser to reach the backend API. Use 'auto' to target port 8000 on the same host, or supply an explicit URL (e.g. http://192.168.1.10:8000)."
+    Description="URL the browser uses to reach the backend API. 'auto' derives the URL from the browser's current hostname and assumes the backend is on port 8000 — this works correctly when you access Unraid by its real IP or hostname. Set an explicit URL (e.g. http://192.168.1.10:8000) if you changed the backend host port or are accessing via a reverse proxy."
     Type="Variable"
     Display="always"
     Required="true"
