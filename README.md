@@ -77,6 +77,50 @@ services:
 | `POSTGRES_PASSWORD` | `postgres` | — | PostgreSQL password (change to a strong value). |
 | `LOG_LEVEL` | `INFO` | — | Backend log verbosity: `DEBUG`, `INFO`, `WARNING`, or `ERROR`. |
 
+### Setting `BASE_URL` and `CORS_ORIGINS`
+
+These two variables tell the backend where it is reachable and which browser origins are allowed to call it.
+
+| Variable | What it represents |
+|---|---|
+| `BASE_URL` | The public URL of the **FastAPI backend** (port `8000`). Used internally to build webhook callback URLs and gateway instructions. |
+| `CORS_ORIGINS` | A comma-separated list of origins that the browser uses to reach the **Next.js frontend** (port `3000`). The backend uses this list to set CORS headers so browser requests are allowed. |
+
+**Rule of thumb:** `BASE_URL` uses port `8000`; `CORS_ORIGINS` uses port `3000`.
+
+#### Scenario A — accessing only from the Unraid server itself
+
+Leave both at their defaults:
+
+```
+BASE_URL=http://localhost:8000
+CORS_ORIGINS=http://localhost:3000
+```
+
+#### Scenario B — accessing from other devices on your LAN
+
+Replace `localhost` with your Unraid server's local IP address (e.g. `192.168.1.10`):
+
+```
+BASE_URL=http://192.168.1.10:8000
+CORS_ORIGINS=http://192.168.1.10:3000
+```
+
+#### Scenario C — behind a reverse proxy (custom domain / HTTPS)
+
+Use the public-facing URLs that your reverse proxy exposes.  If the frontend and backend share the same domain on different paths you can still point each variable at its own sub-path or subdomain:
+
+```
+BASE_URL=https://openclaw-api.example.com
+CORS_ORIGINS=https://openclaw.example.com
+```
+
+If you need to allow multiple origins (e.g. both `http` and `https`, or a local IP and a domain name), supply them as a comma-separated list:
+
+```
+CORS_ORIGINS=http://192.168.1.10:3000,https://openclaw.example.com
+```
+
 ### Generating a `LOCAL_AUTH_TOKEN`
 
 `LOCAL_AUTH_TOKEN` must be a random string of **at least 50 characters**.  Use one of the commands below to generate a suitable value:
