@@ -31,9 +31,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      UPSTREAM_REPO: abhi1693/openclaw-mission-control
+
     permissions:
       contents: read
       packages: write
+      id-token: write   # required for provenance attestations (docker/build-push-action v4+)
 
     steps:
       # ── 1. Checkout this wrapper repository ──────────────────────────────────
@@ -57,7 +61,7 @@ jobs:
             RELEASE_RESPONSE=$(curl -sf \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${GH_TOKEN}" \
-              https://api.github.com/repos/abhi1693/openclaw-mission-control/releases/latest \
+              https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest \
               2>&1) || {
               echo "WARNING: Failed to fetch upstream release info (curl exit code $?): ${RELEASE_RESPONSE}"
               RELEASE_RESPONSE=""
@@ -70,7 +74,7 @@ jobs:
               REPO_RESPONSE=$(curl -sf \
                 -H "Accept: application/vnd.github+json" \
                 -H "Authorization: Bearer ${GH_TOKEN}" \
-                https://api.github.com/repos/abhi1693/openclaw-mission-control \
+                https://api.github.com/repos/${UPSTREAM_REPO} \
                 2>&1) || {
                 echo "WARNING: Failed to fetch upstream repo info (curl exit code $?): ${REPO_RESPONSE}"
                 REPO_RESPONSE=""
@@ -80,6 +84,12 @@ jobs:
 
               if [ -z "${DEFAULT_BRANCH}" ]; then
                 echo "WARNING: Could not determine upstream default branch – falling back to 'master'."
+                DEFAULT_BRANCH="master"
+              fi
+
+              # Verify the branch actually exists in the remote; fall back to 'master' if not.
+              if ! git ls-remote --heads https://github.com/${UPSTREAM_REPO} "refs/heads/${DEFAULT_BRANCH}" | grep -q .; then
+                echo "WARNING: Branch '${DEFAULT_BRANCH}' not found in upstream repo – falling back to 'master'."
                 DEFAULT_BRANCH="master"
               fi
 
@@ -100,7 +110,7 @@ jobs:
       - name: Checkout upstream source
         uses: actions/checkout@v4
         with:
-          repository: abhi1693/openclaw-mission-control
+          repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ steps.upstream.outputs.ref }}
           path: upstream
 
@@ -139,7 +149,7 @@ jobs:
             org.opencontainers.image.title=OpenClaw Mission Control (Unraid)
             org.opencontainers.image.description=Single-container Unraid image for OpenClaw Mission Control
             org.opencontainers.image.url=https://github.com/julesdg6/openclaw-mission-control-unraid
-            org.opencontainers.image.source=https://github.com/abhi1693/openclaw-mission-control
+            org.opencontainers.image.source=https://github.com/${{ env.UPSTREAM_REPO }}
             org.opencontainers.image.version=${{ steps.upstream.outputs.image_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
