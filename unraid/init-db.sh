@@ -31,14 +31,17 @@ if [ ! -f "${PGDATA}/PG_VERSION" ]; then
 fi
 
 # Start PostgreSQL in the background so we can run post-init SQL below.
+# Listen on both local socket and 127.0.0.1 so that the application can
+# connect via TCP once the setup below has completed.
 echo "[init-db] Starting PostgreSQL"
 su -s /bin/bash postgres -c "${PG_BINDIR}/postgres -D '${PGDATA}' -c listen_addresses='127.0.0.1'" &
 PG_PID=$!
 
-# Wait for PostgreSQL to accept connections.
+# Wait for PostgreSQL to accept connections via the local socket
+# (auth-local=trust so no password needed at this stage).
 READY=0
 for i in $(seq 1 30); do
-    if su -s /bin/bash postgres -c "pg_isready -q -h 127.0.0.1" 2>/dev/null; then
+    if su -s /bin/bash postgres -c "pg_isready -q" 2>/dev/null; then
         READY=1
         break
     fi
@@ -52,14 +55,34 @@ if [ "${READY}" -eq 0 ]; then
     exit 1
 fi
 
-# Create the role and database when they do not exist yet.
-su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -tc \"SELECT 1 FROM pg_roles WHERE rolname='${POSTGRES_USER}'\"" \
-    | grep -q 1 || \
-    su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -c \"CREATE ROLE \\\"${POSTGRES_USER}\\\" WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}'\""
+# Create the role if it does not exist yet, then ensure its password is set.
+# We use the local socket (no -h flag) so that auth-local=trust applies and
+# no password is required for these maintenance commands.
+# When POSTGRES_USER is "postgres" the role already exists after initdb but
+# has no password assigned – the ALTER ROLE below takes care of that case.
+# SQL is fed via stdin so that the password never appears in process args.
+# Escape single quotes in the password for safe embedding in SQL literals.
+ESCAPED_PW="${POSTGRES_PASSWORD//\'/\'\'}"
 
-su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -tc \"SELECT 1 FROM pg_database WHERE datname='${POSTGRES_DB}'\"" \
-    | grep -q 1 || \
-    su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -c \"CREATE DATABASE \\\"${POSTGRES_DB}\\\" OWNER \\\"${POSTGRES_USER}\\\"\""
+if su -s /bin/bash postgres -c \
+        "${PG_BINDIR}/psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='${POSTGRES_USER}'\"" \
+        | grep -q 1; then
+    # Role already exists (e.g. the built-in postgres superuser); set the password.
+    su -s /bin/bash postgres -c "${PG_BINDIR}/psql" <<EOSQL
+ALTER ROLE "${POSTGRES_USER}" WITH PASSWORD '${ESCAPED_PW}';
+EOSQL
+else
+    su -s /bin/bash postgres -c "${PG_BINDIR}/psql" <<EOSQL
+CREATE ROLE "${POSTGRES_USER}" WITH LOGIN PASSWORD '${ESCAPED_PW}';
+EOSQL
+fi
+
+if ! su -s /bin/bash postgres -c \
+        "${PG_BINDIR}/psql -tc \"SELECT 1 FROM pg_database WHERE datname='${POSTGRES_DB}'\"" \
+        | grep -q 1; then
+    su -s /bin/bash postgres -c \
+        "${PG_BINDIR}/psql -c \"CREATE DATABASE \\\"${POSTGRES_DB}\\\" OWNER \\\"${POSTGRES_USER}\\\"\""
+fi
 
 echo "[init-db] PostgreSQL is ready"
 
