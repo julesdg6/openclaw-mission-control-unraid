@@ -5,7 +5,6 @@ set -euo pipefail
 
 PGDATA="${PGDATA:-/config/postgres}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-mission_control}"
 
 # On Debian, PostgreSQL binaries live under /usr/lib/postgresql/<version>/bin/
@@ -27,7 +26,7 @@ chmod 700 "${PGDATA}"
 # Initialise the cluster if it does not already exist.
 if [ ! -f "${PGDATA}/PG_VERSION" ]; then
     echo "[init-db] Initialising PostgreSQL data directory at ${PGDATA}"
-    su -s /bin/bash postgres -c "${PG_BINDIR}/initdb -D '${PGDATA}' --auth-host=md5 --auth-local=trust"
+    su -s /bin/bash postgres -c "${PG_BINDIR}/initdb -D '${PGDATA}' --auth-host=trust --auth-local=trust"
 fi
 
 # Start PostgreSQL in the background so we can run post-init SQL below.
@@ -55,25 +54,17 @@ if [ "${READY}" -eq 0 ]; then
     exit 1
 fi
 
-# Create the role if it does not exist yet, then ensure its password is set.
+# Create the role if it does not exist yet.
 # We use the local socket (no -h flag) so that auth-local=trust applies and
 # no password is required for these maintenance commands.
-# When POSTGRES_USER is "postgres" the role already exists after initdb but
-# has no password assigned – the ALTER ROLE below takes care of that case.
-# SQL is fed via stdin so that the password never appears in process args.
-# Escape single quotes in the password for safe embedding in SQL literals.
-ESCAPED_PW="${POSTGRES_PASSWORD//\'/\'\'}"
-
+# When POSTGRES_USER is "postgres" the role already exists after initdb.
 if su -s /bin/bash postgres -c \
         "${PG_BINDIR}/psql -tc \"SELECT 1 FROM pg_roles WHERE rolname='${POSTGRES_USER}'\"" \
         | grep -q 1; then
-    # Role already exists (e.g. the built-in postgres superuser); set the password.
-    su -s /bin/bash postgres -c "${PG_BINDIR}/psql" <<EOSQL
-ALTER ROLE "${POSTGRES_USER}" WITH PASSWORD '${ESCAPED_PW}';
-EOSQL
+    : # Role already exists; nothing to do.
 else
     su -s /bin/bash postgres -c "${PG_BINDIR}/psql" <<EOSQL
-CREATE ROLE "${POSTGRES_USER}" WITH LOGIN PASSWORD '${ESCAPED_PW}';
+CREATE ROLE "${POSTGRES_USER}" WITH LOGIN;
 EOSQL
 fi
 

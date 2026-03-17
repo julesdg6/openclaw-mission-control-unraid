@@ -4,10 +4,9 @@
 set -euo pipefail
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-mission_control}"
 
-export DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}"
+export DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}@127.0.0.1:5432/${POSTGRES_DB}"
 export REDIS_URL="redis://127.0.0.1:6379/0"
 export RQ_REDIS_URL="${REDIS_URL}"
 export DB_AUTO_MIGRATE="${DB_AUTO_MIGRATE:-true}"
@@ -22,7 +21,7 @@ export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:3000}"
 # verify that the role and database created by init-db.sh already exist.
 # Connecting with the application credentials ensures both are present.
 echo "[start-backend] Waiting for PostgreSQL..."
-until PGPASSWORD="${POSTGRES_PASSWORD}" psql -h 127.0.0.1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "SELECT 1" >/dev/null 2>&1; do sleep 1; done
+until psql -h 127.0.0.1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "SELECT 1" >/dev/null 2>&1; do sleep 1; done
 
 # Wait for Redis.
 echo "[start-backend] Waiting for Redis..."
