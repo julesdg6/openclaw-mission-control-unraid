@@ -8,6 +8,17 @@ POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-mission_control}"
 
+# On Debian, PostgreSQL binaries live under /usr/lib/postgresql/<version>/bin/
+# and are not on the default PATH.  Discover the directory at runtime so the
+# script works regardless of which PostgreSQL version was installed.
+PG_BINDIR=$(find /usr/lib/postgresql -maxdepth 3 -name postgres -type f \
+    -exec dirname {} + 2>/dev/null | sort -V | tail -1)
+if [ -z "${PG_BINDIR}" ]; then
+    echo "[init-db] ERROR: PostgreSQL binaries not found under /usr/lib/postgresql" >&2
+    exit 1
+fi
+echo "[init-db] Using PostgreSQL binaries at ${PG_BINDIR}"
+
 # Ensure the data directory is owned by the postgres system user.
 mkdir -p "${PGDATA}"
 chown -R postgres:postgres "${PGDATA}"
@@ -16,12 +27,12 @@ chmod 700 "${PGDATA}"
 # Initialise the cluster if it does not already exist.
 if [ ! -f "${PGDATA}/PG_VERSION" ]; then
     echo "[init-db] Initialising PostgreSQL data directory at ${PGDATA}"
-    su -s /bin/bash postgres -c "initdb -D '${PGDATA}' --auth-host=md5 --auth-local=trust"
+    su -s /bin/bash postgres -c "${PG_BINDIR}/initdb -D '${PGDATA}' --auth-host=md5 --auth-local=trust"
 fi
 
 # Start PostgreSQL in the background so we can run post-init SQL below.
 echo "[init-db] Starting PostgreSQL"
-su -s /bin/bash postgres -c "postgres -D '${PGDATA}' -c listen_addresses='127.0.0.1'" &
+su -s /bin/bash postgres -c "${PG_BINDIR}/postgres -D '${PGDATA}' -c listen_addresses='127.0.0.1'" &
 PG_PID=$!
 
 # Wait for PostgreSQL to accept connections.
@@ -42,13 +53,13 @@ if [ "${READY}" -eq 0 ]; then
 fi
 
 # Create the role and database when they do not exist yet.
-su -s /bin/bash postgres -c "psql -h 127.0.0.1 -tc \"SELECT 1 FROM pg_roles WHERE rolname='${POSTGRES_USER}'\"" \
+su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -tc \"SELECT 1 FROM pg_roles WHERE rolname='${POSTGRES_USER}'\"" \
     | grep -q 1 || \
-    su -s /bin/bash postgres -c "psql -h 127.0.0.1 -c \"CREATE ROLE \\\"${POSTGRES_USER}\\\" WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}'\""
+    su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -c \"CREATE ROLE \\\"${POSTGRES_USER}\\\" WITH LOGIN PASSWORD '${POSTGRES_PASSWORD}'\""
 
-su -s /bin/bash postgres -c "psql -h 127.0.0.1 -tc \"SELECT 1 FROM pg_database WHERE datname='${POSTGRES_DB}'\"" \
+su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -tc \"SELECT 1 FROM pg_database WHERE datname='${POSTGRES_DB}'\"" \
     | grep -q 1 || \
-    su -s /bin/bash postgres -c "psql -h 127.0.0.1 -c \"CREATE DATABASE \\\"${POSTGRES_DB}\\\" OWNER \\\"${POSTGRES_USER}\\\"\""
+    su -s /bin/bash postgres -c "${PG_BINDIR}/psql -h 127.0.0.1 -c \"CREATE DATABASE \\\"${POSTGRES_DB}\\\" OWNER \\\"${POSTGRES_USER}\\\"\""
 
 echo "[init-db] PostgreSQL is ready"
 
