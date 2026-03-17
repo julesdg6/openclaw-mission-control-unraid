@@ -20,35 +20,6 @@ The image is published to the GitHub Container Registry on every push to `main` 
 ghcr.io/julesdg6/openclaw-mission-control-unraid:latest
 ```
 
-### One-time repository setup for CI
-
-GitHub's default Actions token permissions are **read-only**, which prevents `GITHUB_TOKEN` from creating a new package in the Container Registry on the first push.
-Fix this with **one** of the two options below (option A is recommended):
-
-**Option A — Add a `GHCR_TOKEN` repository secret** *(recommended — no repository settings change needed)*
-
-You need a classic Personal Access Token (PAT) with the `write:packages` scope.  If you have already created one, skip straight to step 4.
-
-1. Go to <https://github.com/settings/tokens/new> (GitHub → profile photo → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)** → **Generate new token**).
-2. Give it a memorable note (e.g. `ghcr push – openclaw-mission-control-unraid`).
-3. Tick the **`write:packages`** checkbox (this automatically selects `read:packages` too) and click **Generate token**.  Copy the token — you will not be able to see it again.
-4. Open this repository on GitHub and click the **Settings** tab (the gear icon at the top of the page, not your profile settings).
-5. In the left sidebar click **Secrets and variables** → **Actions**.
-6. Click the **New repository secret** button.
-7. In the **Name** field enter exactly: `GHCR_TOKEN`
-8. Paste your token into the **Secret** field and click **Add secret**.
-
-That is it.  The next push to `main` (or a manual run of the workflow via **Actions → Build and Push Docker Image → Run workflow**) will push the image successfully.
-
-The CI workflow automatically prefers `GHCR_TOKEN` over `GITHUB_TOKEN` when the secret is present.
-
-**Option B — Change the repository's default Actions token permissions**
-
-1. In this repository go to **Settings → Actions → General → Workflow permissions**.
-2. Select **Read and write permissions** and click **Save**.
-
----
-
 ## Installing on Unraid
 
 > **Note:** This template is not yet listed in the Unraid Community Apps store.
@@ -105,6 +76,26 @@ services:
 | `POSTGRES_USER` | `postgres` | — | PostgreSQL username. |
 | `POSTGRES_PASSWORD` | `postgres` | — | PostgreSQL password (change to a strong value). |
 | `LOG_LEVEL` | `INFO` | — | Backend log verbosity: `DEBUG`, `INFO`, `WARNING`, or `ERROR`. |
+
+### Generating a `LOCAL_AUTH_TOKEN`
+
+`LOCAL_AUTH_TOKEN` must be a random string of **at least 50 characters**.  Use one of the commands below to generate a suitable value:
+
+```bash
+# Linux / macOS — openssl (recommended)
+openssl rand -hex 32
+
+# Linux / macOS — /dev/urandom
+tr -dc 'A-Za-z0-9' </dev/urandom | head -c 64; echo
+
+# Python (any platform)
+python3 -c "import secrets; print(secrets.token_hex(32))"
+
+# Node.js (any platform)
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Copy the output and use it as the value for `LOCAL_AUTH_TOKEN` when starting the container.
 
 ### Ports
 
