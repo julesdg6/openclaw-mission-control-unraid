@@ -69,8 +69,8 @@ services:
 |---|---|---|---|
 | `AUTH_MODE` | `local` | ✅ | Authentication mode: `local` (token) or `clerk` (Clerk JWT). |
 | `LOCAL_AUTH_TOKEN` | _(empty)_ | ✅ when `AUTH_MODE=local` | Static auth token — must be at least 50 characters. |
-| `BASE_URL` | `http://localhost:8000` | ✅ | Public URL of the backend API. Update to your Unraid IP if accessed from other devices (e.g. `http://192.168.1.10:8000`). |
-| `CORS_ORIGINS` | `http://localhost:3000` | ✅ | Comma-separated allowed CORS origins. Update to your Unraid IP (e.g. `http://192.168.1.10:3000`). |
+| `BASE_URL` | `http://localhost:8000` | ✅ | Public URL of the backend API. **Must be set to your Unraid server's IP** (e.g. `http://192.168.1.10:8000`). The `localhost` default does not work because browsers run on a different machine. |
+| `CORS_ORIGINS` | `http://localhost:3000` | ✅ | Comma-separated allowed CORS origins. **Must be set to your Unraid server's IP** (e.g. `http://192.168.1.10:3000`). The `localhost` default does not work because browsers run on a different machine. |
 | `NEXT_PUBLIC_API_URL` | `auto` | ✅ | Browser-facing URL for the backend API. Use `auto` to target port 8000 on the same host, or supply an explicit URL. |
 | `POSTGRES_DB` | `mission_control` | — | PostgreSQL database name. |
 | `POSTGRES_USER` | `postgres` | — | PostgreSQL username. |
@@ -88,25 +88,22 @@ These two variables tell the backend where it is reachable and which browser ori
 
 **Rule of thumb:** `BASE_URL` uses port `8000`; `CORS_ORIGINS` uses port `3000`.
 
-#### Scenario A — accessing only from the Unraid server itself
+#### Scenario A — accessing from devices on your LAN (most users)
 
-Leave both at their defaults:
-
-```
-BASE_URL=http://localhost:8000
-CORS_ORIGINS=http://localhost:3000
-```
-
-#### Scenario B — accessing from other devices on your LAN
-
-Replace `localhost` with your Unraid server's local IP address (e.g. `192.168.1.10`):
+Because Unraid is a headless server, your browser always runs on a **different machine**.
+Replace `192.168.1.10` with your Unraid server's actual local IP address:
 
 ```
 BASE_URL=http://192.168.1.10:8000
 CORS_ORIGINS=http://192.168.1.10:3000
 ```
 
-#### Scenario C — behind a reverse proxy (custom domain / HTTPS)
+> **Why `localhost` never works here:** `localhost` in `BASE_URL` and `CORS_ORIGINS` is
+> resolved by the *browser*, not the server. A browser on your laptop treats `localhost` as
+> the laptop itself, not the Unraid box — so API calls are blocked by CORS and the UI shows
+> "Unable to reach backend". Always use the server's real IP address.
+
+#### Scenario B — behind a reverse proxy (custom domain / HTTPS)
 
 Use the public-facing URLs that your reverse proxy exposes.  If the frontend and backend share the same domain on different paths you can still point each variable at its own sub-path or subdomain:
 
