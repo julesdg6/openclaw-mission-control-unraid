@@ -155,17 +155,6 @@
     Required="false"
     Mask="false">postgres</Config>
 
-  <Config
-    Name="POSTGRES_PASSWORD"
-    Target="POSTGRES_PASSWORD"
-    Default="postgres"
-    Mode=""
-    Description="PostgreSQL password. PostgreSQL only listens on 127.0.0.1 inside the container, but it is still good practice to set a strong, unique value."
-    Type="Variable"
-    Display="advanced"
-    Required="false"
-    Mask="true">postgres</Config>
-
   <!-- ── Logging ────────────────────────────────────────────────────────── -->
   <Config
     Name="LOG_LEVEL"
