@@ -20,6 +20,24 @@ The image is published to the GitHub Container Registry on every push to `main` 
 ghcr.io/julesdg6/openclaw-mission-control-unraid:latest
 ```
 
+### One-time repository setup for CI
+
+GitHub's default Actions token permissions are **read-only**, which prevents `GITHUB_TOKEN` from creating a new package in the Container Registry on the first push.
+Fix this with **one** of the two options below (option A is recommended):
+
+**Option A — Add a `GHCR_TOKEN` repository secret** *(no repository settings change needed)*
+
+1. Create a [classic Personal Access Token](https://github.com/settings/tokens/new) with the `write:packages` scope.
+2. In this repository go to **Settings → Secrets and variables → Actions → New repository secret**.
+3. Name it `GHCR_TOKEN` and paste the token value.
+
+The CI workflow will automatically prefer `GHCR_TOKEN` over `GITHUB_TOKEN` when both are available.
+
+**Option B — Change the repository's default Actions token permissions**
+
+1. In this repository go to **Settings → Actions → General → Workflow permissions**.
+2. Select **Read and write permissions** and click **Save**.
+
 ---
 
 ## Installing on Unraid
